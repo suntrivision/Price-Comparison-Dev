@@ -6,8 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Download, RotateCcw } from "lucide-react";
 import { ComparisonTableRow } from "./components/ComparisonTableRow";
 import { useEmbeddingClusterData } from "./hooks/useEmbeddingClusterData";
+import { useLotusShopeeCSVData } from "./hooks/useLotusShopeeCSVData";
 import { 
   transformEmbeddingDataToRows,
+  transformCSVDataToRows,
   formatPrice, 
   formatPercentage, 
   getMarketplaceBadgeColor,
@@ -27,19 +29,24 @@ interface PriceComparisonTableProps {
 export function PriceComparisonTable({ onNavigateToDetails, onNavigateToCampbell }: PriceComparisonTableProps) {
   const [embeddingVersion, setEmbeddingVersion] = useState<'v2' | 'v3'>('v3');
   const { embeddingData, isLoading: embeddingLoading, error: embeddingError, refetch: refetchEmbedding } = useEmbeddingClusterData(embeddingVersion);
+  const { csvData, isLoading: csvLoading, error: csvError, refetch: refetchCSV } = useLotusShopeeCSVData();
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
   const [filterSameBrand, setFilterSameBrand] = useState(false);
   const [minSimilarity, setMinSimilarity] = useState(0);
 
-  // Transform embedding data to comparison rows
+  // Transform embedding and CSV data to comparison rows
   const comparisonRows = useMemo(() => {
-    console.log('🔄 PriceComparisonTable: Building comparison rows from HORECA embedding data');
+    console.log('🔄 PriceComparisonTable: Building comparison rows from embedding and CSV data');
     console.log('🎯 Embedding data:', embeddingData?.length || 0, 'clusters');
+    console.log('📊 CSV data:', csvData?.length || 0, 'products');
     
-    // Check if INDOMIE data is present in embedding data
+    const allRows: ComparisonRow[] = [];
+    
+    // Transform embedding data
     if (embeddingData && embeddingData.length > 0) {
+      // Check if INDOMIE data is present in embedding data
       const indomieClusters = embeddingData.filter(cluster => 
         cluster.all_products && cluster.all_products.includes('INDOMIE')
       );
@@ -50,17 +57,22 @@ export function PriceComparisonTable({ onNavigateToDetails, onNavigateToCampbell
         cluster.lowest_url && cluster.lowest_url.includes('corp.lotuss.com.my/promotions/catalogue/new/horeca-flyer')
       );
       console.log('🏪 HORECA flyer clusters found:', horecaClusters.length);
-    }
-    
-    if (embeddingData && embeddingData.length > 0) {
+      
       const embeddingRows = transformEmbeddingDataToRows(embeddingData);
       console.log('✅ Embedding transformed rows:', embeddingRows.length);
-      return embeddingRows;
+      allRows.push(...embeddingRows);
     }
     
-    console.log('🏁 No embedding data available');
-    return [];
-  }, [embeddingData]);
+    // Transform CSV data
+    if (csvData && csvData.length > 0) {
+      const csvRows = transformCSVDataToRows(csvData);
+      console.log('✅ CSV transformed rows:', csvRows.length);
+      allRows.push(...csvRows);
+    }
+    
+    console.log('🏁 Total comparison rows:', allRows.length);
+    return allRows;
+  }, [embeddingData, csvData]);
 
   // Filter rows by search term with enhanced partial matching
   const filteredRows = useMemo(() => {
@@ -142,9 +154,10 @@ export function PriceComparisonTable({ onNavigateToDetails, onNavigateToCampbell
     setSelectedRows(newSelected);
   };
 
-  // Handle refresh for embedding data
+  // Handle refresh for both embedding and CSV data
   const handleRefresh = () => {
     refetchEmbedding();
+    refetchCSV();
   };
 
   // Pagination
@@ -153,8 +166,8 @@ export function PriceComparisonTable({ onNavigateToDetails, onNavigateToCampbell
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const currentRows = similarityFilteredRows.slice(startIndex, endIndex);
 
-  const isLoading = embeddingLoading;
-  const error = embeddingError;
+  const isLoading = embeddingLoading || csvLoading;
+  const error = embeddingError || csvError;
 
   if (isLoading) {
     return (
@@ -272,6 +285,22 @@ export function PriceComparisonTable({ onNavigateToDetails, onNavigateToCampbell
                     <TableHead>Lowest Source Price</TableHead>
                     <TableHead>Highest Marketplace Price</TableHead>
                     <TableHead>Margin%</TableHead>
+                    <TableHead className="min-w-[120px]">
+                      <div className="flex items-center gap-1">
+                        <span>Shop Name</span>
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                      </div>
+                    </TableHead>
+                    <TableHead className="min-w-[120px]">
+                      <div className="flex items-center gap-1">
+                        <span>Shop URL</span>
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </div>
+                    </TableHead>
                     <TableHead>Similarity Score</TableHead>
                     <TableHead>
                       <img
@@ -287,6 +316,8 @@ export function PriceComparisonTable({ onNavigateToDetails, onNavigateToCampbell
                     <TableHead>Shopee</TableHead>
                     <TableHead>Lazada</TableHead>
                     <TableHead>TikTok</TableHead>
+                    <TableHead>HORECA</TableHead>
+                    <TableHead>Publitas</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

@@ -21,6 +21,8 @@ interface ProductDetail {
   source_search_url: string;
   size_info: string;
   similarity_to_best_price: number;
+  shopName?: string;
+  shopUrl?: string;
 }
 
 interface CampbellProductsTabProps {
@@ -145,7 +147,7 @@ export function CampbellProductsTab({ onNavigateToProductDetails, searchTerm: pr
         setError(null);
         
         console.log('🔄 Fetching data from CSV source...');
-        const response = await fetch('https://prodpromo.s3.ap-southeast-1.amazonaws.com/lotuss/combined_shopeeLotusFBeCatHORECA8-0.csv');
+        const response = await fetch('https://prodpromo.s3.ap-southeast-1.amazonaws.com/lotuss/combined_shopeeLotusFBeCatHORECA12-0.csv');
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -244,6 +246,9 @@ export function CampbellProductsTab({ onNavigateToProductDetails, searchTerm: pr
           // Extract size information from product name
           const sizeMatch = productName.match(/\(([^)]+)\)$/);
           const sizeInfo = sizeMatch ? sizeMatch[1] : "";
+
+          const shopName = item["Shop name"] || "";
+          const shopUrl = item["Shop url"] || "";
           
           transformedProducts.push({
             name: productName,
@@ -259,7 +264,9 @@ export function CampbellProductsTab({ onNavigateToProductDetails, searchTerm: pr
             image_url: item["Product Image"] || "",
             source_search_url: productUrl,
             size_info: sizeInfo,
-            similarity_to_best_price: 100
+            similarity_to_best_price: 100,
+            shopName: shopName,
+            shopUrl: shopUrl
           });
         }
         
@@ -566,9 +573,10 @@ export function CampbellProductsTab({ onNavigateToProductDetails, searchTerm: pr
                   <TableHead>Discounted Price</TableHead>
                   <TableHead>Discount %</TableHead>
                   <TableHead>Marketplace</TableHead>
+                  <TableHead>Shop Name</TableHead>
+                  <TableHead>Shop URL</TableHead>
                   <TableHead>Size/Info</TableHead>
                   <TableHead>Last Updated</TableHead>
-                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -615,6 +623,14 @@ export function CampbellProductsTab({ onNavigateToProductDetails, searchTerm: pr
                         {product.marketplace}
                       </Badge>
                     </TableCell>
+                    <TableCell>{product.shopName || '-'}</TableCell>
+                    <TableCell>
+                      {product.shopUrl ? (
+                        <a href={product.shopUrl} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      ) : '-'}
+                    </TableCell>
                     <TableCell>
                       <div className="text-sm text-muted-foreground">
                         {product.size_info || 'N/A'}
@@ -623,41 +639,6 @@ export function CampbellProductsTab({ onNavigateToProductDetails, searchTerm: pr
                     <TableCell>
                       <div className="text-sm text-muted-foreground">
                         {formatDate(product.timestamp)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {product.image_url && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                            onClick={() => window.open(product.image_url, '_blank')}
-                            title="View Product Image"
-                          >
-                            <ImageIcon className="h-3 w-3" />
-                          </Button>
-                        )}
-                        {product.product_url && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                            onClick={() => window.open(cleanUrl(product.product_url), '_blank')}
-                            title="Open Product URL"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                          onClick={() => onNavigateToProductDetails?.(product.name)}
-                          title="View Details"
-                        >
-                          <Eye className="h-3 w-3" />
-                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>

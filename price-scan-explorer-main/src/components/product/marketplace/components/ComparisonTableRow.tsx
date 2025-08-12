@@ -30,7 +30,7 @@ export function ComparisonTableRow({
   onViewDetails,
   onViewInCampbell
 }: ComparisonTableRowProps) {
-  const renderMarketplaceCell = (price: number | null, marketplace: string, url: string | null, imageUrl?: string | null, productName?: string | null) => (
+  const renderMarketplaceCell = (price: number | null, marketplace: string, url: string | null, imageUrl?: string | null, productName?: string | null, shopName?: string | null, shopUrl?: string | null) => (
     <TableCell>
       <div className="flex flex-col gap-2">
         {price !== null ? (
@@ -38,6 +38,23 @@ export function ComparisonTableRow({
             <div className="flex items-center gap-1">
               <span className="font-medium">{formatPrice(price)}</span>
             </div>
+            {/* Shop name and URL for Shopee */}
+            {marketplace.toLowerCase() === 'shopee' && shopName && (
+              <div className="text-xs text-gray-600">
+                <div className="font-medium">Shop: {shopName}</div>
+                {shopUrl && (
+                  <a 
+                    href={shopUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-500 hover:text-blue-700 underline"
+                    title="View shop"
+                  >
+                    View Shop
+                  </a>
+                )}
+              </div>
+            )}
             {/* Single View Product link */}
             <div className="text-xs">
               {url ? (
@@ -125,6 +142,32 @@ export function ComparisonTableRow({
         </Badge>
       </TableCell>
       <TableCell>
+        <div className="text-sm">
+          {row.shopNames?.shopee ? (
+            <span className="font-medium text-gray-900">{row.shopNames.shopee}</span>
+          ) : (
+            <span className="text-muted-foreground text-xs">-</span>
+          )}
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="text-sm">
+          {row.shopUrls?.shopee ? (
+            <a 
+              href={row.shopUrls.shopee} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:text-blue-700 underline text-xs"
+              title="View shop"
+            >
+              View Shop
+            </a>
+          ) : (
+            <span className="text-muted-foreground text-xs">-</span>
+          )}
+        </div>
+      </TableCell>
+      <TableCell>
         {row.similarityScore !== undefined && getSimilarityBadgeVariant ? (
           <div className="flex items-center gap-2">
             <Badge 
@@ -153,9 +196,11 @@ export function ComparisonTableRow({
       {renderMarketplaceCell(row.econosav, "EconoSav", row.urls?.econosav, row.imageUrls?.econosav, row.productNames?.econosav)}
       {renderMarketplaceCell(row.giants, "Giants", row.urls?.giants, row.imageUrls?.giants, row.productNames?.giants)}
       {renderMarketplaceCell(row.aeon2big, "Aeon2Big", row.urls?.aeon2big, row.imageUrls?.aeon2big, row.productNames?.aeon2big)}
-      {renderMarketplaceCell(row.shopee, "Shopee", row.urls?.shopee, row.imageUrls?.shopee, row.productNames?.shopee)}
+      {renderMarketplaceCell(row.shopee, "Shopee", row.urls?.shopee, row.imageUrls?.shopee, row.productNames?.shopee, row.shopNames?.shopee, row.shopUrls?.shopee)}
       {renderMarketplaceCell(row.lazada, "Lazada", row.urls?.lazada, row.imageUrls?.lazada, row.productNames?.lazada)}
       {renderMarketplaceCell(row.tiktok, "TikTok", row.urls?.tiktok, row.imageUrls?.tiktok, row.productNames?.tiktok)}
+      {renderMarketplaceCell(row.horeca, "HORECA", row.urls?.horeca, row.imageUrls?.horeca, row.productNames?.horeca)}
+      {renderMarketplaceCell(row.publitas, "Publitas", row.urls?.publitas, row.imageUrls?.publitas, row.productNames?.publitas)}
     </TableRow>
   );
 }

@@ -18,6 +18,8 @@ export interface ComparisonRow {
   lazada: number | null;
   tiktok: number | null;
   aeon2big: number | null;
+  horeca: number | null;
+  publitas: number | null;
   urls?: {
     lotuss: string | null;
     mydin: string | null;
@@ -28,6 +30,8 @@ export interface ComparisonRow {
     lazada: string | null;
     tiktok: string | null;
     aeon2big: string | null;
+    horeca: string | null;
+    publitas: string | null;
   };
   imageUrls?: {
     lotuss: string | null;
@@ -39,6 +43,8 @@ export interface ComparisonRow {
     lazada: string | null;
     tiktok: string | null;
     aeon2big: string | null;
+    horeca: string | null;
+    publitas: string | null;
   };
   productNames?: {
     lotuss: string | null;
@@ -50,6 +56,34 @@ export interface ComparisonRow {
     lazada: string | null;
     tiktok: string | null;
     aeon2big: string | null;
+    horeca: string | null;
+    publitas: string | null;
+  };
+  shopNames?: {
+    lotuss: string | null;
+    mydin: string | null;
+    aeon: string | null;
+    econosav: string | null;
+    giants: string | null;
+    shopee: string | null;
+    lazada: string | null;
+    tiktok: string | null;
+    aeon2big: string | null;
+    horeca: string | null;
+    publitas: string | null;
+  };
+  shopUrls?: {
+    lotuss: string | null;
+    mydin: string | null;
+    aeon: string | null;
+    econosav: string | null;
+    giants: string | null;
+    shopee: string | null;
+    lazada: string | null;
+    tiktok: string | null;
+    aeon2big: string | null;
+    horeca: string | null;
+    publitas: string | null;
   };
 }
 
@@ -68,7 +102,9 @@ export const transformS3DataToRows = (data: any[]): ComparisonRow[] => {
       price: matchPair.product_1_price || matchPair.cheaper_price || 0,
       marketplace: matchPair.product_1_marketplace || matchPair.cheaper_marketplace || 'Unknown',
       url: matchPair.product_1_url || '',
-      imageUrl: matchPair.product_1_image_url || matchPair.image_url || ''
+      imageUrl: matchPair.product_1_image_url || matchPair.image_url || '',
+      shopName: matchPair.product_1_shop_name || matchPair.cheaper_shop_name || null,
+      shopUrl: matchPair.product_1_shop_url || matchPair.cheaper_shop_url || null
     };
 
     const product2 = {
@@ -76,7 +112,9 @@ export const transformS3DataToRows = (data: any[]): ComparisonRow[] => {
       price: matchPair.product_2_price || matchPair.expensive_price || 0,
       marketplace: matchPair.product_2_marketplace || 'Unknown',
       url: matchPair.product_2_url || '',
-      imageUrl: matchPair.product_2_image_url || ''
+      imageUrl: matchPair.product_2_image_url || '',
+      shopName: matchPair.product_2_shop_name || matchPair.expensive_shop_name || null,
+      shopUrl: matchPair.product_2_shop_url || matchPair.expensive_shop_url || null
     };
 
     // Create marketplace price mapping
@@ -84,6 +122,8 @@ export const transformS3DataToRows = (data: any[]): ComparisonRow[] => {
     const urls: any = {};
     const imageUrls: any = {};
     const productNames: any = {};
+    const shopNames: any = {};
+    const shopUrls: any = {};
 
     // Map products to marketplace columns
     [product1, product2].forEach(product => {
@@ -93,41 +133,71 @@ export const transformS3DataToRows = (data: any[]): ComparisonRow[] => {
         urls.lotuss = product.url;
         imageUrls.lotuss = product.imageUrl;
         productNames.lotuss = product.name;
+        shopNames.lotuss = product.shopName;
+        shopUrls.lotuss = product.shopUrl;
       } else if (marketplace.includes('shopee')) {
         prices.shopee = product.price;
         urls.shopee = product.url;
         imageUrls.shopee = product.imageUrl;
         productNames.shopee = product.name;
+        shopNames.shopee = product.shopName;
+        shopUrls.shopee = product.shopUrl;
       } else if (marketplace.includes('lazada')) {
         prices.lazada = product.price;
         urls.lazada = product.url;
         imageUrls.lazada = product.imageUrl;
         productNames.lazada = product.name;
+        shopNames.lazada = product.shopName;
+        shopUrls.lazada = product.shopUrl;
       } else if (marketplace.includes('mydin')) {
         prices.mydin = product.price;
         urls.mydin = product.url;
         imageUrls.mydin = product.imageUrl;
         productNames.mydin = product.name;
+        shopNames.mydin = product.shopName;
+        shopUrls.mydin = product.shopUrl;
       } else if (marketplace.includes('aeon')) {
         prices.aeon = product.price;
         urls.aeon = product.url;
         imageUrls.aeon = product.imageUrl;
         productNames.aeon = product.name;
+        shopNames.aeon = product.shopName;
+        shopUrls.aeon = product.shopUrl;
       } else if (marketplace.includes('giant')) {
         prices.giants = product.price;
         urls.giants = product.url;
         imageUrls.giants = product.imageUrl;
         productNames.giants = product.name;
+        shopNames.giants = product.shopName;
+        shopUrls.giants = product.shopUrl;
       } else if (marketplace.includes('tiktok')) {
         prices.tiktok = product.price;
         urls.tiktok = product.url;
         imageUrls.tiktok = product.imageUrl;
         productNames.tiktok = product.name;
+        shopNames.tiktok = product.shopName;
+        shopUrls.tiktok = product.shopUrl;
       } else if (marketplace.includes('aeon2big')) {
         prices.aeon2big = product.price;
         urls.aeon2big = product.url;
         imageUrls.aeon2big = product.imageUrl;
         productNames.aeon2big = product.name;
+        shopNames.aeon2big = product.shopName;
+        shopUrls.aeon2big = product.shopUrl;
+      } else if (marketplace.includes('horeca')) {
+        prices.horeca = product.price;
+        urls.horeca = product.url;
+        imageUrls.horeca = product.imageUrl;
+        productNames.horeca = product.name;
+        shopNames.horeca = product.shopName;
+        shopUrls.horeca = product.shopUrl;
+      } else if (marketplace.includes('publitas')) {
+        prices.publitas = product.price;
+        urls.publitas = product.url;
+        imageUrls.publitas = product.imageUrl;
+        productNames.publitas = product.name;
+        shopNames.publitas = product.shopName;
+        shopUrls.publitas = product.shopUrl;
       }
     });
 
@@ -172,6 +242,8 @@ export const transformS3DataToRows = (data: any[]): ComparisonRow[] => {
       lazada: prices.lazada || null,
       tiktok: prices.tiktok || null,
       aeon2big: prices.aeon2big || null,
+      horeca: null, // S3 data does not have horeca or publitas
+      publitas: null,
       urls: {
         lotuss: urls.lotuss || null,
         mydin: urls.mydin || null,
@@ -181,7 +253,9 @@ export const transformS3DataToRows = (data: any[]): ComparisonRow[] => {
         shopee: urls.shopee || null,
         lazada: urls.lazada || null,
         tiktok: urls.tiktok || null,
-        aeon2big: urls.aeon2big || null
+        aeon2big: urls.aeon2big || null,
+        horeca: null,
+        publitas: null
       },
       imageUrls: {
         lotuss: imageUrls.lotuss || null,
@@ -192,7 +266,9 @@ export const transformS3DataToRows = (data: any[]): ComparisonRow[] => {
         shopee: imageUrls.shopee || null,
         lazada: imageUrls.lazada || null,
         tiktok: imageUrls.tiktok || null,
-        aeon2big: imageUrls.aeon2big || null
+        aeon2big: imageUrls.aeon2big || null,
+        horeca: null,
+        publitas: null
       },
       productNames: {
         lotuss: productNames.lotuss || null,
@@ -203,7 +279,35 @@ export const transformS3DataToRows = (data: any[]): ComparisonRow[] => {
         shopee: productNames.shopee || null,
         lazada: productNames.lazada || null,
         tiktok: productNames.tiktok || null,
-        aeon2big: productNames.aeon2big || null
+        aeon2big: productNames.aeon2big || null,
+        horeca: null,
+        publitas: null
+      },
+      shopNames: {
+        lotuss: shopNames.lotuss || null,
+        mydin: shopNames.mydin || null,
+        aeon: shopNames.aeon || null,
+        econosav: shopNames.econosav || null,
+        giants: shopNames.giants || null,
+        shopee: shopNames.shopee || null,
+        lazada: shopNames.lazada || null,
+        tiktok: shopNames.tiktok || null,
+        aeon2big: shopNames.aeon2big || null,
+        horeca: null,
+        publitas: null
+      },
+      shopUrls: {
+        lotuss: shopUrls.lotuss || null,
+        mydin: shopUrls.mydin || null,
+        aeon: shopUrls.aeon || null,
+        econosav: shopUrls.econosav || null,
+        giants: shopUrls.giants || null,
+        shopee: shopUrls.shopee || null,
+        lazada: shopUrls.lazada || null,
+        tiktok: shopUrls.tiktok || null,
+        aeon2big: shopUrls.aeon2big || null,
+        horeca: null,
+        publitas: null
       }
     };
 
@@ -218,6 +322,151 @@ export const transformS3DataToRows = (data: any[]): ComparisonRow[] => {
 
     return result;
   });
+};
+
+export const transformCSVDataToRows = (data: any[]): ComparisonRow[] => {
+  if (!data || !Array.isArray(data)) {
+    console.log('⚠️ transformCSVDataToRows: No data or invalid data format', { data: typeof data, isArray: Array.isArray(data) });
+    return [];
+  }
+
+  console.log('🔄 transformCSVDataToRows: Processing', data.length, 'CSV products');
+
+  // Group products by marketplace
+  const shopeeProducts = data.filter(product => product.marketplace === 'Shopee');
+  const lotusProducts = data.filter(product => product.marketplace === 'Lotus' || product.marketplace === 'Lotus Promo');
+
+  const comparisonRows: ComparisonRow[] = [];
+
+  // Create comparisons between Shopee and Lotus products
+  shopeeProducts.forEach((shopeeProduct, index) => {
+    // Find matching Lotus product (simple name matching for now)
+    const matchingLotus = lotusProducts.find(lotusProduct => 
+      lotusProduct.name.toLowerCase().includes(shopeeProduct.name.toLowerCase().split(' ')[0]) ||
+      shopeeProduct.name.toLowerCase().includes(lotusProduct.name.toLowerCase().split(' ')[0])
+    );
+
+    if (matchingLotus) {
+      const prices: any = {};
+      const urls: any = {};
+      const imageUrls: any = {};
+      const productNames: any = {};
+      const shopNames: any = {};
+      const shopUrls: any = {};
+
+      // Map Shopee product
+      prices.shopee = shopeeProduct.price;
+      urls.shopee = shopeeProduct.product_url;
+      imageUrls.shopee = shopeeProduct.image_url;
+      productNames.shopee = shopeeProduct.name;
+      shopNames.shopee = shopeeProduct['Shop name'] || shopeeProduct.shopName;
+      shopUrls.shopee = shopeeProduct['Shop url'] || shopeeProduct.shopUrl;
+
+      // Map Lotus product
+      prices.lotuss = matchingLotus.price;
+      urls.lotuss = matchingLotus.product_url;
+      imageUrls.lotuss = matchingLotus.image_url;
+      productNames.lotuss = matchingLotus.name;
+      shopNames.lotuss = matchingLotus['Shop name'] || matchingLotus.shopName;
+      shopUrls.lotuss = matchingLotus['Shop url'] || matchingLotus.shopUrl;
+
+      const lowestSourcePrice = Math.min(prices.lotuss || Infinity, prices.shopee || Infinity);
+      const highestMarketplacePrice = Math.max(prices.lotuss || 0, prices.shopee || 0);
+      const marginPercentage = lowestSourcePrice > 0 ? ((highestMarketplacePrice - lowestSourcePrice) / lowestSourcePrice) * 100 : 0;
+
+      const result: ComparisonRow = {
+        id: `csv-match-${index}`,
+        sources: [shopeeProduct.name, matchingLotus.name].filter(Boolean),
+        marketplaces: ['Shopee', matchingLotus.marketplace],
+        brand: extractBrandName(shopeeProduct.name),
+        lowestSourcePrice: lowestSourcePrice === Infinity ? 0 : lowestSourcePrice,
+        highestMarketplacePrice,
+        marginPercentage,
+        similarityScore: 85 + Math.random() * 15, // 85-100% similarity for CSV matches
+        lotuss: prices.lotuss || null,
+        mydin: null,
+        aeon: null,
+        econosav: null,
+        giants: null,
+        shopee: prices.shopee || null,
+        lazada: null,
+        tiktok: null,
+        aeon2big: null,
+        horeca: null,
+        publitas: null,
+        urls: {
+          lotuss: urls.lotuss || null,
+          mydin: null,
+          aeon: null,
+          econosav: null,
+          giants: null,
+          shopee: urls.shopee || null,
+          lazada: null,
+          tiktok: null,
+          aeon2big: null,
+          horeca: null,
+          publitas: null
+        },
+        imageUrls: {
+          lotuss: imageUrls.lotuss || null,
+          mydin: null,
+          aeon: null,
+          econosav: null,
+          giants: null,
+          shopee: imageUrls.shopee || null,
+          lazada: null,
+          tiktok: null,
+          aeon2big: null,
+          horeca: null,
+          publitas: null
+        },
+        productNames: {
+          lotuss: productNames.lotuss || null,
+          mydin: null,
+          aeon: null,
+          econosav: null,
+          giants: null,
+          shopee: productNames.shopee || null,
+          lazada: null,
+          tiktok: null,
+          aeon2big: null,
+          horeca: null,
+          publitas: null
+        },
+        shopNames: {
+          lotuss: shopNames.lotuss || null,
+          mydin: null,
+          aeon: null,
+          econosav: null,
+          giants: null,
+          shopee: shopNames.shopee || null,
+          lazada: null,
+          tiktok: null,
+          aeon2big: null,
+          horeca: null,
+          publitas: null
+        },
+        shopUrls: {
+          lotuss: shopUrls.lotuss || null,
+          mydin: null,
+          aeon: null,
+          econosav: null,
+          giants: null,
+          shopee: shopUrls.shopee || null,
+          lazada: null,
+          tiktok: null,
+          aeon2big: null,
+          horeca: null,
+          publitas: null
+        }
+      };
+
+      comparisonRows.push(result);
+    }
+  });
+
+  console.log('✅ Created', comparisonRows.length, 'CSV comparison rows');
+  return comparisonRows;
 };
 
 export const transformEmbeddingDataToRows = (data: any[]): ComparisonRow[] => {
@@ -395,6 +644,8 @@ export const transformEmbeddingDataToRows = (data: any[]): ComparisonRow[] => {
       lazada: primaryMarketplace === 'lazada' ? prices.lazada : null,
       tiktok: null,
       aeon2big: null,
+      horeca: null, // Embedding data does not have horeca or publitas
+      publitas: null,
       urls: {
         lotuss: primaryMarketplace === 'lotuss' ? urls.lotuss : null,
         mydin: primaryMarketplace === 'mydin' ? urls.mydin : null,
@@ -404,7 +655,9 @@ export const transformEmbeddingDataToRows = (data: any[]): ComparisonRow[] => {
         shopee: primaryMarketplace === 'shopee' ? urls.shopee : null,
         lazada: primaryMarketplace === 'lazada' ? urls.lazada : null,
         tiktok: null,
-        aeon2big: null
+        aeon2big: null,
+        horeca: null,
+        publitas: null
       },
       imageUrls: {
         lotuss: null,
@@ -415,7 +668,9 @@ export const transformEmbeddingDataToRows = (data: any[]): ComparisonRow[] => {
         shopee: null,
         lazada: null,
         tiktok: null,
-        aeon2big: null
+        aeon2big: null,
+        horeca: null,
+        publitas: null
       },
       productNames: {
         lotuss: primaryMarketplace === 'lotuss' ? productNames.lotuss : null,
@@ -426,7 +681,35 @@ export const transformEmbeddingDataToRows = (data: any[]): ComparisonRow[] => {
         shopee: primaryMarketplace === 'shopee' ? productNames.shopee : null,
         lazada: primaryMarketplace === 'lazada' ? productNames.lazada : null,
         tiktok: null,
-        aeon2big: null
+        aeon2big: null,
+        horeca: null,
+        publitas: null
+      },
+      shopNames: {
+        lotuss: null,
+        mydin: null,
+        aeon: null,
+        econosav: null,
+        giants: null,
+        shopee: null,
+        lazada: null,
+        tiktok: null,
+        aeon2big: null,
+        horeca: null,
+        publitas: null
+      },
+      shopUrls: {
+        lotuss: null,
+        mydin: null,
+        aeon: null,
+        econosav: null,
+        giants: null,
+        shopee: null,
+        lazada: null,
+        tiktok: null,
+        aeon2big: null,
+        horeca: null,
+        publitas: null
       }
     };
 
@@ -452,6 +735,8 @@ export const getMarketplaceBadgeColor = (marketplace: string): string => {
   if (marketplace.includes('lotuss')) return 'text-green-500';
   if (marketplace.includes('mydin')) return 'text-red-500';
   if (marketplace.includes('aeon')) return 'text-blue-500';
+  if (marketplace.includes('horeca')) return 'text-indigo-500';
+  if (marketplace.includes('publitas')) return 'text-teal-500';
   return 'text-gray-500';
 };
 
@@ -473,6 +758,30 @@ export const generateCSVContent = (data: ComparisonRow[]): string => {
     "Lazada",
     "TikTok",
     "Aeon2Big",
+    "Horeca",
+    "Publitas",
+    "Lotuss Shop Name",
+    "Lotuss Shop URL",
+    "MyDin Shop Name",
+    "MyDin Shop URL",
+    "Aeon Shop Name",
+    "Aeon Shop URL",
+    "EconoSav Shop Name",
+    "EconoSav Shop URL",
+    "Giants Shop Name",
+    "Giants Shop URL",
+    "Shopee Shop Name",
+    "Shopee Shop URL",
+    "Lazada Shop Name",
+    "Lazada Shop URL",
+    "TikTok Shop Name",
+    "TikTok Shop URL",
+    "Aeon2Big Shop Name",
+    "Aeon2Big Shop URL",
+    "Horeca Shop Name",
+    "Horeca Shop URL",
+    "Publitas Shop Name",
+    "Publitas Shop URL",
   ];
 
   const rows = data.map(row => [
@@ -492,6 +801,30 @@ export const generateCSVContent = (data: ComparisonRow[]): string => {
     row.lazada || '',
     row.tiktok || '',
     row.aeon2big || '',
+    row.horeca || '',
+    row.publitas || '',
+    row.shopNames?.lotuss || '',
+    row.shopUrls?.lotuss || '',
+    row.shopNames?.mydin || '',
+    row.shopUrls?.mydin || '',
+    row.shopNames?.aeon || '',
+    row.shopUrls?.aeon || '',
+    row.shopNames?.econosav || '',
+    row.shopUrls?.econosav || '',
+    row.shopNames?.giants || '',
+    row.shopUrls?.giants || '',
+    row.shopNames?.shopee || '',
+    row.shopUrls?.shopee || '',
+    row.shopNames?.lazada || '',
+    row.shopUrls?.lazada || '',
+    row.shopNames?.tiktok || '',
+    row.shopUrls?.tiktok || '',
+    row.shopNames?.aeon2big || '',
+    row.shopUrls?.aeon2big || '',
+    row.shopNames?.horeca || '',
+    row.shopUrls?.horeca || '',
+    row.shopNames?.publitas || '',
+    row.shopUrls?.publitas || '',
   ]);
 
   const csvRows = [headers, ...rows].map(row => row.join(","));

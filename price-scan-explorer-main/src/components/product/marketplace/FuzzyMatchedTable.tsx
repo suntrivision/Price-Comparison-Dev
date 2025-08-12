@@ -51,6 +51,14 @@ export function FuzzyMatchedTable() {
   const extractQuantity = (productName: string): number => {
     if (!productName) return 1;
     
+    // New: If pattern like '8 X 5 X 80', use the first number as pack size
+    const tripleXPattern = /^(\d+)\s*[xX×]\s*\d+\s*[xX×]\s*\d+/;
+    const tripleXMatch = productName.match(tripleXPattern);
+    if (tripleXMatch) {
+      const packSize = parseInt(tripleXMatch[1]);
+      if (packSize > 1) return packSize;
+    }
+
     // Look for patterns like "5X", "5 X", "5x", "5 x"
     const multiplyPatterns = [
       /(\d+)\s*[xX×]\s*\d+[a-zA-Z]*/g, // 5X85G, 3x100ml

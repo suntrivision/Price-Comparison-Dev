@@ -15,7 +15,7 @@ interface MarketComparisonTabProps {
 
 export function MarketComparisonTab({ products }: MarketComparisonTabProps) {
   const [priceMatchData, setPriceMatchData] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState("fuzzy-matched");
+  const [activeTab, setActiveTab] = useState("campbell-products");
   const [campbellSearchTerm, setCampbellSearchTerm] = useState("");
 
 
@@ -59,15 +59,11 @@ export function MarketComparisonTab({ products }: MarketComparisonTabProps) {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="fuzzy-matched">Smart Compare</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="campbell-products">Product</TabsTrigger>
               <TabsTrigger value="product-comparison">Product Comparison</TabsTrigger>
               <TabsTrigger value="edit-products">Edit Products</TabsTrigger>
             </TabsList>
-            <TabsContent value="fuzzy-matched" className="space-y-4">
-              <FuzzyMatchedTable />
-            </TabsContent>
 
             <TabsContent value="campbell-products" className="space-y-4">
               <CampbellProductsTab 

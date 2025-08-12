@@ -18,6 +18,7 @@ interface ProductComparison {
       timestamp: string;
     };
   };
+  lotusUrl?: string; // Added lotusUrl to the interface
 }
 
 interface ComparisonTableRowProps {
@@ -25,6 +26,14 @@ interface ComparisonTableRowProps {
   index: number;
   allRunNumbers: number[];
   getPriceChange: (product: ProductComparison, currentRun: number, previousRun: number) => number | null;
+}
+
+// Helper to build Lotus URL if missing
+function buildLotusUrl(productName: string) {
+  const base_url = "https://www.lotuss.com.my/en/search/";
+  const query_suffix = "?sort=relevance:DESC";
+  const encodedName = encodeURIComponent(productName.replace(/\s+/g, '+'));
+  return `${base_url}${encodedName}${query_suffix}`;
 }
 
 export function ComparisonTableRow({ product, index, allRunNumbers, getPriceChange }: ComparisonTableRowProps) {
@@ -115,6 +124,17 @@ export function ComparisonTableRow({ product, index, allRunNumbers, getPriceChan
           </TableCell>
         );
       })}
+      {/* Add new Lotus URL column */}
+      <TableCell>
+        <a
+          href={product.lotusUrl || buildLotusUrl(product.name)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 underline"
+        >
+          Lotus Link
+        </a>
+      </TableCell>
     </TableRow>
   );
 }

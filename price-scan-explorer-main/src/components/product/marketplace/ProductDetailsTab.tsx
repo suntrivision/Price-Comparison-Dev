@@ -26,6 +26,8 @@ interface ProductDetail {
   source_search_url: string;
   size_info: string;
   similarity_to_best_price: number;
+  shopName?: string;
+  shopUrl?: string;
   matched_products: {
     matched_product_name: string;
     matched_product_price: number;
@@ -213,7 +215,7 @@ export function ProductDetailsTab({
       }
       values.push(current.trim());
 
-              if (values.length >= 8) {
+              if (values.length >= 10) {
           const rawProductName = values[0] || '';
           const productName = cleanProductName(rawProductName);
           const productUrl = cleanUrl(values[1] || '');
@@ -223,6 +225,8 @@ export function ProductDetailsTab({
           const discountPercentage = values[5] || '';
           const productId = values[6] || '';
           const timestamp = values[7] || '';
+          const shopName = values[8] || '';
+          const shopUrl = values[9] || '';
 
           // Parse prices
           const originalPrice = parseFloat(originalPriceText.replace(/[^0-9.-]+/g, '')) || 0;
@@ -263,6 +267,8 @@ export function ProductDetailsTab({
             source_search_url: productUrl,
             size_info: sizeInfo,
             similarity_to_best_price: 95 + Math.random() * 5, // 95-100% similarity
+            shopName: shopName,
+            shopUrl: shopUrl,
             matched_products: []
           });
         }
@@ -332,7 +338,7 @@ export function ProductDetailsTab({
             'Content-Type': 'application/json',
           },
           }),
-          fetch('https://prodpromo.s3.ap-southeast-1.amazonaws.com/lotuss/combined_shopeeLotusFBeCatHORECA8-0.csv', {
+          fetch('https://prodpromo.s3.ap-southeast-1.amazonaws.com/thunderbitscrape/matched_lotus_shopee_output_08072025.csv', {
             headers: {
               'Accept': 'text/csv',
               'Content-Type': 'text/csv',
@@ -351,8 +357,8 @@ export function ProductDetailsTab({
         const jsonData = await jsonResponse.json();
         const csvText = await csvResponse.text();
         
-        // Process the new JSON data from lotuss/combined_shopeeLotusFBeCatHORECA8-0.json
-        const lotussJsonResponse = await fetch('https://prodpromo.s3.ap-southeast-1.amazonaws.com/lotuss/combined_shopeeLotusFBeCatHORECA8-0.json', {
+        // Process the new JSON data from lotuss/combined_shopeeLotusFBeCatHORECA10-0.json
+        const lotussJsonResponse = await fetch('https://prodpromo.s3.ap-southeast-1.amazonaws.com/lotuss/combined_shopeeLotusFBeCatHORECA10-0.json', {
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',

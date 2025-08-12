@@ -10,6 +10,8 @@ export interface LotusShopeeProduct {
   productId: string;
   timestamp: string;
   marketplace: string;
+  shopName: string;
+  shopUrl: string;
 }
 
 // Cache for CSV data
@@ -69,7 +71,7 @@ export function useLotusShopeeCSVData() {
         });
       }
 
-      if (values.length >= 8) {
+      if (values.length >= 10) {
         const productName = values[0]?.replace(/^"|"$/g, '') || '';
         const productUrl = values[1]?.replace(/^"|"$/g, '') || '';
         const productImage = values[2]?.replace(/^"|"$/g, '') || '';
@@ -78,6 +80,8 @@ export function useLotusShopeeCSVData() {
         const discountPercentage = values[5]?.replace(/^"|"$/g, '') || 'N/A';
         const productId = values[6]?.replace(/^"|"$/g, '') || '';
         const timestamp = values[7]?.replace(/^"|"$/g, '') || '';
+        const shopName = values[8]?.replace(/^"|"$/g, '') || '';
+        const shopUrl = values[9]?.replace(/^"|"$/g, '') || '';
 
         // Debug: Check for corp.lotuss.com.my pattern specifically
         if (productUrl.includes('corp.lotuss.com.my')) {
@@ -172,7 +176,9 @@ export function useLotusShopeeCSVData() {
             discountPercentage,
             productId,
             timestamp,
-            marketplace
+            marketplace,
+            shopName,
+            shopUrl
           });
         }
       }
@@ -221,7 +227,7 @@ export function useLotusShopeeCSVData() {
         return;
       }
 
-      const url = `https://prodpromo.s3.ap-southeast-1.amazonaws.com/lotuss/combined_shopeeLotusFBeCatHORECA8-0.csv${forceRefresh ? `?_t=${now}` : ''}`;
+              const url = `https://prodpromo.s3.ap-southeast-1.amazonaws.com/thunderbitscrape/matched_lotus_shopee_output_08072025.csv${forceRefresh ? `?_t=${now}` : ''}`;
       console.log('🔄 Fetching CSV data from:', url);
       
       const response = await fetch(url, {

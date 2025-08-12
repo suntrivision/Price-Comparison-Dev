@@ -1,258 +1,279 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
-interface MatchedCSVRow {
-  'Lotus Product': string;
-  'Lotus URL': string;
-  'Lotus Price': string;
-  'Shopee Product': string;
-  'Shopee URL': string;
-  'Shopee Price': string;
-  'Match Score': string;
+export interface MatchedProduct {
+  lotusProduct: string;
+  lotusUrl: string;
+  lotusPrice: number;
+  originalPrice: number; // Add this line
+  lotusPerUnit: string;
+  lotusPerUnitPrice: string;
+  lotusPerUnitCalculation: string;
+  shopeeProduct: string;
+  shopeeUrl: string;
+  shopeePrice: number;
+  shopeePerUnit: string;
+  shopeePerUnitPrice: string;
+  shopeePerUnitCalculation: string;
+  shopeeShopName?: string;
+  shopeeShopUrl?: string;
+  matchScore: number;
+  priceDifference: number;
+  priceDifferencePercentage: number;
+  timestamp: string;
+  matchStatus: string;
+  horecaPrice?: number;
+  productImage?: string;
 }
 
-interface ProcessedMatchedProduct {
-  id: string;
-  cluster_id: string;
-  representative_name: string;
-  name: string;
-  price: number;
-  marketplace: string;
-  product_url: string;
-  image_url: string;
-  source_search_url: string;
-  size_info: string;
-  similarity_to_best_price: number;
-  enhanced_with_image: boolean;
-  lowest_price: number;
-  lowest_marketplace: string;
-  lowest_url: string;
-  category: string;
-  matched_products: Array<{
-    name: string;
-    price: number;
-    marketplace: string;
-    similarity_score: number;
-    product_url: string;
-  }>;
-}
+// Cache for matched CSV data
+let cachedMatchedData: MatchedProduct[] = [];
+let cachedLastFetchTime: number = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export function useMatchedCSVData() {
-  const [csvData, setCsvData] = useState<MatchedCSVRow[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [matchedData, setMatchedData] = useState<MatchedProduct[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
-    setIsLoading(true);
-    setError(null);
-    
+  const parseTimestampToDate = (timestampStr: string): Date => {
+    // Convert yyyy/mm/dd format to Date object for proper sorting
     try {
-      const response = await fetch('https://prodpromo.s3.ap-southeast-1.amazonaws.com/thunderbitscrape/matched_lotus_shopee_horeca_publitasA.csv.txt');
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (!timestampStr || timestampStr === '') {
+        return new Date();
       }
       
-      const csvText = await response.text();
-      console.log('🔍 Raw CSV text length:', csvText.length);
-      console.log('🔍 First 500 characters:', csvText.substring(0, 500));
-      
-      // Clean the CSV text - remove BOM and other encoding artifacts
-      let cleanedCsvText = csvText.replace(/^\uFEFF/, '').replace(/^[^\"]*/,'');
-      
-      // The new format has data wrapped in quotes, so we need to extract individual records
-      const recordPattern = /"([^"]+(?:"[^"]*"[^"]*)*?)"/g;
-      const records = [];
-      let match;
-      
-      while ((match = recordPattern.exec(cleanedCsvText)) !== null) {
-        records.push(match[1]);
+      // If it's already in yyyy/mm/dd format
+      if (/^\d{4}\/\d{2}\/\d{2}$/.test(timestampStr)) {
+        const [year, month, day] = timestampStr.split('/').map(Number);
+        return new Date(year, month - 1, day); // month is 0-indexed in Date constructor
       }
       
-      console.log('🔍 Extracted records:', records.length);
-      
-      if (records.length === 0) {
-        throw new Error('No CSV records found');
+      // Try to parse as ISO string or other formats
+      const date = new Date(timestampStr);
+      if (!isNaN(date.getTime())) {
+        return date;
       }
       
-      // Parse CSV with proper comma handling for URLs with query parameters
-      const parseCSVRecord = (record: string): string[] => {
-        const result: string[] = [];
+      // Fallback to current date
+      return new Date();
+    } catch {
+      return new Date();
+    }
+  };
+
+  const parseMatchedCSVData = (csvText: string): MatchedProduct[] => {
+    const lines = csvText.split('\n');
+    const headers = lines[0].split(',').map(h => h.trim());
+    const products: MatchedProduct[] = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+
+      // Parse CSV line with proper handling of quoted fields
+      const values = [];
         let current = '';
-        let inUrl = false;
-        let i = 0;
-        
-        while (i < record.length) {
-          const char = record[i];
-          
-          // Check if we're starting a URL (contains http)
-          if (record.substring(i, i + 4) === 'http') {
-            inUrl = true;
-          }
-          
-          // Check if we're ending a URL (comma followed by non-URL content)
-          if (char === ',' && inUrl) {
-            // Look ahead to see if next part starts with http or contains RM or is a number
-            const nextPart = record.substring(i + 1, i + 20);
-            if (nextPart.includes('RM') || nextPart.match(/^\d/) || nextPart.includes('http')) {
-              inUrl = false;
+      let inQuotes = false;
+      for (let j = 0; j < line.length; j++) {
+        const char = line[j];
+        if (char === '"') {
+          if (!inQuotes) {
+            inQuotes = true;
+          } else if (j + 1 < line.length && line[j + 1] === '"') {
+            current += '"';
+            j++;
+          } else {
+            inQuotes = false;
             }
-          }
-          
-          if (char === ',' && !inUrl) {
-            result.push(current.trim());
+        } else if (char === ',' && !inQuotes) {
+          values.push(current.trim());
             current = '';
           } else {
             current += char;
           }
-          i++;
-        }
-        result.push(current.trim());
-        return result;
-      };
-      
-      // First record should be the header
-      const headers = parseCSVRecord(records[0]);
-      console.log('🔍 CSV Headers:', headers);
-      
-      const data: MatchedCSVRow[] = [];
-      
-      // Process each record (skip header)
-      for (let i = 1; i < records.length; i++) {
-        const values = parseCSVRecord(records[i]);
-        console.log(`🔍 Record ${i} parsed into ${values.length} values`);
-        
-        if (values.length >= 6) { // Ensure we have at least the required columns
-          const row: any = {};
-          headers.forEach((header, index) => {
-            row[header.trim()] = values[index]?.trim() || '';
-          });
-          data.push(row as MatchedCSVRow);
-        }
       }
+      values.push(current.trim());
+
+      // Map values to headers
+      const row: Record<string, string> = {};
+      headers.forEach((header, idx) => {
+        row[header] = values[idx] || '';
+      });
       
-      console.log('🔍 Matched CSV Data loaded:', data.length, 'rows');
-      
-      // If no data was parsed, try a simpler fallback approach
-      if (data.length === 0) {
-        console.log('🔍 Trying fallback parsing method...');
-        
-        // Try to parse the data as a simple format where each record is on a separate line
-        const simpleRecords = cleanedCsvText.split('" "').map(record => record.replace(/^"/, '').replace(/"$/, ''));
-        
-        if (simpleRecords.length > 1) {
-          const simpleHeaders = simpleRecords[0].split(',');
-          console.log('🔍 Fallback headers:', simpleHeaders);
-          
-          for (let i = 1; i < simpleRecords.length; i++) {
-            // Split by comma but try to keep URLs together
-            const parts = simpleRecords[i].split(',');
-            
-            if (parts.length >= 7) {
-              // Expected format: Product, URL, Price, Product, URL, Price, Score
-              const fallbackRow: any = {};
-              fallbackRow[simpleHeaders[0]] = parts[0];
-              fallbackRow[simpleHeaders[1]] = parts[1];
-              fallbackRow[simpleHeaders[2]] = parts[2];
-              fallbackRow[simpleHeaders[3]] = parts[3];
-              fallbackRow[simpleHeaders[4]] = parts[4];
-              fallbackRow[simpleHeaders[5]] = parts[5];
-              fallbackRow[simpleHeaders[6]] = parts[6];
-              
-              data.push(fallbackRow as MatchedCSVRow);
-            }
-          }
-          
-          console.log('🔍 Fallback parsing loaded:', data.length, 'rows');
+      // Use header names for all fields
+      const lotusProduct = row['Lotus Product'] || '';
+      const lotusUrl = row['Lotus URL'] || '';
+      // Try to get lotusPrice from header, or fallback to 4th column if HORECA flyer
+      let lotusPrice = parseFloat(row['Lotus Price']?.replace('RM', '') || '0') || 0;
+      const originalPrice = parseFloat(row['Original Price (RM)']?.replace('RM', '') || '0') || 0; // Add this line
+      const horecaUrl = row['Product URL'] || '';
+      // If HORECA flyer, get price from 'Lotus Price', 4th column, or 3rd column (first available numeric value)
+      if (horecaUrl.includes('https://corp.lotuss.com.my/promotions/catalogue/new/horeca-flyer')) {
+        let priceCandidate = 0;
+        if (row['Lotus Price'] && !isNaN(parseFloat(row['Lotus Price']))) {
+          priceCandidate = parseFloat(row['Lotus Price']);
+        } else if (values[3] && !isNaN(parseFloat(values[3]))) {
+          priceCandidate = parseFloat(values[3]);
+        } else if (values[2] && !isNaN(parseFloat(values[2]))) {
+          priceCandidate = parseFloat(values[2]);
         }
+        lotusPrice = priceCandidate;
+        // horecaPrice is already initialized to 0, so no need to re-initialize here
       }
+      const lotusPerUnit = row['Lotus Per Unit'] || '';
+      const lotusPerUnitPrice = row['Lotus Per Unit Price'] || '';
+      const lotusPerUnitCalculation = row['Lotus Per Unit Calculation'] || '';
+      const lotusDiscountedPrice = row['Lotus Discounted Price'] || '';
+      const lotusDiscountedPerUnitPrice = row['Lotus Discounted Per Unit Price'] || '';
+      const shopeeProduct = row['Shopee Product'] || '';
+      const shopeeUrl = row['Shopee URL'] || '';
+      const shopeePrice = parseFloat(row['Shopee Price']?.replace('RM', '') || '0') || 0;
+      const shopeePerUnit = row['Shopee Per Unit'] || '';
+      const shopeePerUnitPrice = row['Shopee Per Unit Price'] || '';
+      const shopeePerUnitCalculation = row['Shopee Per Unit Calculation'] || '';
+      const shopeeDiscountedPrice = row['Shopee Discounted Price'] || '';
+      const shopeeDiscountedPerUnitPrice = row['Shopee Discounted Per Unit Price'] || '';
+      const shopeeShopName = row['Shopee Shop Name'] || '';
+      const shopeeShopUrl = row['Shopee Shop URL'] || '';
+      const matchScore = parseFloat(row['Match Score'] || '0') || 0;
+      const timestamp = row['timestamp'] || new Date().toISOString();
+      const matchStatus = row['Match Status'] || 'Unknown';
+      let horecaPrice = 0;
+      if (horecaUrl.includes('https://corp.lotuss.com.my/promotions/catalogue/new/horeca-flyer')) {
+        horecaPrice = lotusPrice;
+        console.log('[HORECA DEBUG]', {
+          lotusProduct,
+          horecaUrl,
+          lotusPrice,
+          horecaPrice,
+          values
+        });
+      }
+      const productImage = row['Product Image'] || '';
+
+      // Calculate price differences
+      const priceDifference = lotusPrice - shopeePrice;
+      const priceDifferencePercentage = lotusPrice > 0 ? (priceDifference / lotusPrice) * 100 : 0;
+
+      // Include all products (matched and unmatched)
+      if (lotusProduct || shopeeProduct) {
+        products.push({
+          lotusProduct,
+          lotusUrl,
+          lotusPrice,
+          originalPrice, // Add this line
+          lotusPerUnit,
+          lotusPerUnitPrice,
+          lotusPerUnitCalculation,
+          shopeeProduct,
+          shopeeUrl,
+          shopeePrice,
+          shopeePerUnit,
+          shopeePerUnitPrice,
+          shopeePerUnitCalculation,
+          shopeeShopName,
+          shopeeShopUrl,
+          matchScore,
+          priceDifference,
+          priceDifferencePercentage,
+          timestamp,
+          matchStatus,
+          horecaPrice,
+          productImage
+        });
+      } else if (row['Product Name'] && horecaPrice > 0) {
+        // HORECA-only product row
+        products.push({
+          lotusProduct: row['Product Name'],
+          lotusUrl: '',
+          lotusPrice: 0,
+          originalPrice: 0, // Add this line
+          lotusPerUnit: '',
+          lotusPerUnitPrice: '',
+          lotusPerUnitCalculation: '',
+          shopeeProduct: '',
+          shopeeUrl: '',
+          shopeePrice: 0,
+          shopeePerUnit: '',
+          shopeePerUnitPrice: '',
+          shopeePerUnitCalculation: '',
+          shopeeShopName: '',
+          shopeeShopUrl: '',
+          matchScore: 0,
+          priceDifference: 0,
+          priceDifferencePercentage: 0,
+          timestamp,
+          matchStatus: 'HORECA Only',
+          horecaPrice,
+          productImage
+        });
+      }
+    }
+    // Sort by timestamp descending (latest to oldest), then by matchScore
+    products.sort((a, b) => {
+      const dateA = parseTimestampToDate(a.timestamp).getTime();
+      const dateB = parseTimestampToDate(b.timestamp).getTime();
+      if (dateA !== dateB) return dateB - dateA;
+      return b.matchScore - a.matchScore;
+    });
+    return products;
+  };
+
+  const fetchMatchedCSVData = useCallback(async (forceRefresh = false) => {
+    try {
+      setIsLoading(true);
+      setError(null);
       
-      setCsvData(data);
+      // Check cache first
+      const now = Date.now();
+      if (!forceRefresh && cachedMatchedData.length > 0 && (now - cachedLastFetchTime) < CACHE_DURATION) {
+        setMatchedData(cachedMatchedData);
+        setIsLoading(false);
+        return;
+      }
+
+              const url = `https://prodpromo.s3.ap-southeast-1.amazonaws.com/thunderbitscrape/matched_lotus_shopee_output_08072025.csv${forceRefresh ? `?_t=${now}` : ''}`;
+      console.log('🔄 Fetching matched CSV data from:', url);
       
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'text/csv',
+          'Cache-Control': 'no-cache'
+        }
+      });
+        
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+      const csvText = await response.text();
+      const parsedData = parseMatchedCSVData(csvText);
+      
+      // Update cache
+      cachedMatchedData = parsedData;
+      cachedLastFetchTime = now;
+        
+      setMatchedData(parsedData);
     } catch (err) {
-      console.error('❌ Error fetching matched CSV data:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      console.error('Error fetching matched CSV data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch matched CSV data');
+      setMatchedData([]);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchData();
   }, []);
 
-  const processedData = useMemo(() => {
-    if (!csvData.length) return [];
+  useEffect(() => {
+    fetchMatchedCSVData();
+  }, [fetchMatchedCSVData]);
 
-    const products: ProcessedMatchedProduct[] = [];
+  const refetch = useCallback(() => {
+    // Clear cache before refetching
+    cachedMatchedData = [];
+    cachedLastFetchTime = 0;
+    fetchMatchedCSVData(true);
+  }, [fetchMatchedCSVData]);
 
-    csvData.forEach((row, index) => {
-      const lotusPrice = parseFloat(row['Lotus Price']?.replace('RM', '').replace(',', '') || '0');
-      const shopeePrice = parseFloat(row['Shopee Price']?.replace('RM', '').replace(',', '') || '0');
-      const matchScore = parseFloat(row['Match Score'] || '0');
-
-      // Create Lotus product entry
-      products.push({
-        id: `matched-lotus-${index}`,
-        cluster_id: `matched-${index}`,
-        representative_name: row['Lotus Product'],
-        name: row['Lotus Product'],
-        price: lotusPrice,
-        marketplace: 'Lotus',
-        product_url: row['Lotus URL'] || '',
-        image_url: '',
-        source_search_url: row['Lotus URL'] || '',
-        size_info: '',
-        similarity_to_best_price: matchScore,
-        enhanced_with_image: false,
-        lowest_price: Math.min(lotusPrice, shopeePrice),
-        lowest_marketplace: lotusPrice <= shopeePrice ? 'Lotus' : 'Shopee',
-        lowest_url: lotusPrice <= shopeePrice ? row['Lotus URL'] : row['Shopee URL'],
-        category: 'Fuzzy Matched Products',
-        matched_products: [{
-          name: row['Shopee Product'],
-          price: shopeePrice,
-          marketplace: 'Shopee',
-          similarity_score: matchScore,
-          product_url: row['Shopee URL'] || ''
-        }]
-      });
-
-      // Create Shopee product entry
-      products.push({
-        id: `matched-shopee-${index}`,
-        cluster_id: `matched-${index}`,
-        representative_name: row['Shopee Product'],
-        name: row['Shopee Product'],
-        price: shopeePrice,
-        marketplace: 'Shopee',
-        product_url: row['Shopee URL'] || '',
-        image_url: '',
-        source_search_url: row['Shopee URL'] || '',
-        size_info: '',
-        similarity_to_best_price: matchScore,
-        enhanced_with_image: false,
-        lowest_price: Math.min(lotusPrice, shopeePrice),
-        lowest_marketplace: lotusPrice <= shopeePrice ? 'Lotus' : 'Shopee',
-        lowest_url: lotusPrice <= shopeePrice ? row['Lotus URL'] : row['Shopee URL'],
-        category: 'Fuzzy Matched Products',
-        matched_products: [{
-          name: row['Lotus Product'],
-          price: lotusPrice,
-          marketplace: 'Lotus',
-          similarity_score: matchScore,
-          product_url: row['Lotus URL'] || ''
-        }]
-      });
-    });
-
-    return products;
-  }, [csvData]);
-
-  return {
-    csvData,
-    processedData,
-    isLoading,
-    error,
-    refetch: fetchData
-  };
+  return { matchedData, isLoading, error, refetch };
 } 

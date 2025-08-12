@@ -134,7 +134,7 @@ export function useLotusCSVData() {
         return;
       }
 
-      const csvUrl = 'https://prodpromo.s3.ap-southeast-1.amazonaws.com/lotuss/combined_shopeeLotusFBeCatHORECA8-0.csv';
+      const csvUrl = 'https://prodpromo.s3.ap-southeast-1.amazonaws.com/thunderbitscrape/matched_lotus_shopee_output_08072025.csv';
       const response = await fetch(csvUrl + (forceRefresh ? `?_t=${now}` : ''));
         
       if (!response.ok) {

@@ -26,6 +26,14 @@ interface ComparisonTableTabProps {
 
 const ITEMS_PER_PAGE = 15;
 
+// Helper to build Lotus URL if missing
+function buildLotusUrl(productName: string) {
+  const base_url = "https://www.lotuss.com.my/en/search/";
+  const query_suffix = "?sort=relevance:DESC";
+  const encodedName = encodeURIComponent(productName.replace(/\s+/g, '+'));
+  return `${base_url}${encodedName}${query_suffix}`;
+}
+
 export function ComparisonTableTab({ products }: ComparisonTableTabProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [runSortOrder, setRunSortOrder] = useState<SortOrder>(null);
@@ -115,11 +123,18 @@ export function ComparisonTableTab({ products }: ComparisonTableTabProps) {
     downloadCSV(csvContent);
   };
 
+  // Remove duplicates by product name (case-insensitive)
+  const uniqueComparisons = sortedComparisons.filter(
+    (item, index, self) =>
+      index === self.findIndex(
+        (t) => t.name.toLowerCase() === item.name.toLowerCase()
+      )
+  );
   // Pagination calculations
-  const totalPages = Math.ceil(sortedComparisons.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(uniqueComparisons.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
-  const currentProducts = sortedComparisons.slice(startIndex, endIndex);
+  const currentProducts = uniqueComparisons.slice(startIndex, endIndex);
 
   return (
     <div className="w-full space-y-6">
@@ -163,7 +178,7 @@ export function ComparisonTableTab({ products }: ComparisonTableTabProps) {
       {totalPages > 1 && (
         <div className="flex justify-between items-center text-sm text-muted-foreground mb-4">
           <span>
-            Showing {startIndex + 1} to {Math.min(endIndex, sortedComparisons.length)} of {sortedComparisons.length} products
+            Showing {startIndex + 1} to {Math.min(endIndex, uniqueComparisons.length)} of {uniqueComparisons.length} products
           </span>
           <span>
             Page {currentPage} of {totalPages}
